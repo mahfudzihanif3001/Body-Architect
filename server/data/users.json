@@ -1,0 +1,30 @@
+[
+  {
+    "username": "Budi Macho",
+    "email": "budi@mail.com",
+    "password": "12345678", 
+    "age": 25,
+    "gender": "male",
+    "height": 175.5,
+    "weight": 70.0,
+    "activityLevel": "moderate",
+    "goal": "muscle_build",
+    "tdee": 2600,
+    "createdAt": "2025-12-09T00:00:00.000Z",
+    "updatedAt": "2025-12-09T00:00:00.000Z"
+  },
+  {
+    "username": "Siti Diet",
+    "email": "siti@mail.com",
+    "password": "12345678",
+    "age": 28,
+    "gender": "female",
+    "height": 160.0,
+    "weight": 65.0,
+    "activityLevel": "sedentary",
+    "goal": "weight_loss",
+    "tdee": 1800,
+    "createdAt": "2025-12-09T00:00:00.000Z",
+    "updatedAt": "2025-12-09T00:00:00.000Z"
+  }
+]
