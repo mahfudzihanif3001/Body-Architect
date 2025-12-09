@@ -31,8 +31,8 @@ app.post("/login", UserController.login);
 // 2. Protected Routes
 app.use(authentication); 
 
-app.get("/dashboard", PlanController.getDashboard);
-app.post("/generate-plan", PlanController.generateCompletePlan);
+// app.get("/dashboard", PlanController.getDashboard);
+// app.post("/generate-plan", PlanController.generateCompletePlan);
 
 // app.put("/meals/:id", authorization, PlanController.updateMeal);
 // app.delete("/meals/:id", authorization, PlanController.deleteMeal);
