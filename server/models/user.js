@@ -30,6 +30,10 @@ module.exports = (sequelize, DataTypes) => {
         notNull: { msg: "Username wajib diisi" }
       }
     },
+    role:{
+      type: DataTypes.STRING,
+      defaultValue: 'user',
+    },
     age:{
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -67,7 +71,15 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     activityLevel: DataTypes.STRING,
-    goal: DataTypes.STRING,
+    goal: {
+  type: DataTypes.STRING,
+  validate: {
+    isIn: {
+      args: [['weight_loss', 'muscle_build', 'maintenance', 'endurance']], // Daftar yang diizinkan
+      msg: "Goal must be one of: weight_loss, muscle_build, maintenance, or endurance"
+    }
+  }
+},
     tdee: DataTypes.INTEGER
   }, {
     sequelize,

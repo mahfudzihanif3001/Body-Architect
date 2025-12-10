@@ -12,6 +12,10 @@ module.exports = (sequelize, DataTypes) => {
     name: DataTypes.STRING,
     type: DataTypes.STRING,
     calories: DataTypes.INTEGER,
+    isCompleted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
     protein: DataTypes.FLOAT,
     carbs: DataTypes.FLOAT,
     fat: DataTypes.FLOAT

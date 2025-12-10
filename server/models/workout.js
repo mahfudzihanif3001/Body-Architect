@@ -12,7 +12,12 @@ module.exports = (sequelize, DataTypes) => {
     name: DataTypes.STRING,
     duration_mins: DataTypes.INTEGER,
     calories_burned: DataTypes.INTEGER,
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    gifUrl: DataTypes.STRING,
+    isCompleted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    }
   }, {
     sequelize,
     modelName: 'Workout',
