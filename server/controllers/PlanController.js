@@ -1,5 +1,5 @@
 const { User, DailyPlan, Workout, Meal } = require("../models");
-const { generateWorkoutWithAI } = require("../helpers/thirdParty"); // Import Helper AI
+const { generateWorkoutWithAI } = require("../helpers/thirdParty");
 const { Op } = require("sequelize");
 
 class PlanController {
@@ -237,61 +237,51 @@ class PlanController {
           });
         });
 
-        // Hitung persentase (0 - 100)
         if (totalItems > 0) {
           adherenceScore = (completedItems / totalItems) * 100;
           console.log(`User Adherence Score: ${adherenceScore}%`);
         }
       }
 
-      // 2. PANGGIL AI DENGAN DATA EVALUASI
       const aiResult = await generateWorkoutWithAI(
         { goal: user.goal, activityLevel: user.activityLevel },
         adherenceScore // Kirim skor ke AI
       );
 
-      // Ekspektasi AI Result: { weekly_plan: [ {day_number: 1, meals: [], workouts: []}, ... ] }
-
-      // 3. SIMPAN 7 HARI KE DATABASE
       const today = new Date();
 
-      // Loop 7 hari dari AI
       for (let i = 0; i < 7; i++) {
         const dayPlan = aiResult.weekly_plan[i];
 
-        // Atur tanggal: Hari ini + i hari
         const planDate = new Date(today);
         planDate.setDate(today.getDate() + i);
 
-        // Buat DailyPlan
         const newDailyPlan = await DailyPlan.create({
           userId: user.id,
           date: planDate,
           status: "active",
         });
 
-        // Bulk Insert Workouts
         const workoutsData = dayPlan.workouts.map((w) => ({
           dailyPlanId: newDailyPlan.id,
           name: w.name,
-          reps: w.reps, // Asumsi kamu tambah kolom reps di migration workout, atau masuk ke duration
+          reps: w.reps,
           type: w.type,
           duration_mins: 15,
           calories_burned: 100,
-          isCompleted: false, // Default belum diceklis
+          isCompleted: false,
         }));
         await Workout.bulkCreate(workoutsData);
 
-        // Bulk Insert Meals
         const mealsData = dayPlan.meals.map((m) => ({
           dailyPlanId: newDailyPlan.id,
           name: m.name,
-          type: m.type, // breakfast, lunch, dinner
+          type: m.type,
           calories: m.calories,
-          protein: 20, // Dummy dulu atau minta AI generate makro detail
+          protein: 20,
           carbs: 30,
           fat: 10,
-          isCompleted: false, // Default belum diceklis
+          isCompleted: false,
         }));
         await Meal.bulkCreate(mealsData);
       }
@@ -314,8 +304,8 @@ class PlanController {
 
   static async toggleItemStatus(req, res, next) {
     try {
-      const { type, id } = req.params; // type: 'meal' atau 'workout'
-      const { isCompleted } = req.body; // true/false
+      const { type, id } = req.params;
+      const { isCompleted } = req.body;
 
       if (type === "meal") {
         await Meal.update({ isCompleted }, { where: { id } });
