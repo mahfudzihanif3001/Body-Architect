@@ -1,26 +1,28 @@
-'use strict';
-const { Model } = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Workout extends Model {
     static associate(models) {
-      // Relasi balik ke DailyPlan
-      Workout.belongsTo(models.DailyPlan, { foreignKey: 'dailyPlanId' });
+      Workout.belongsTo(models.DailyPlan, { foreignKey: "dailyPlanId" });
     }
   }
-  Workout.init({
-    dailyPlanId: DataTypes.INTEGER,
-    name: DataTypes.STRING,
-    duration_mins: DataTypes.INTEGER,
-    calories_burned: DataTypes.INTEGER,
-    type: DataTypes.STRING,
-    gifUrl: DataTypes.STRING,
-    isCompleted: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
+  Workout.init(
+    {
+      dailyPlanId: DataTypes.INTEGER,
+      name: DataTypes.STRING,
+      duration_mins: DataTypes.INTEGER,
+      calories_burned: DataTypes.INTEGER,
+      type: DataTypes.STRING,
+      gifUrl: DataTypes.STRING,
+      isCompleted: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+    },
+    {
+      sequelize,
+      modelName: "Workout",
     }
-  }, {
-    sequelize,
-    modelName: 'Workout',
-  });
+  );
   return Workout;
 };

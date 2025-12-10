@@ -21,7 +21,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(requestActivity);
 
-
 // app.get("/", (req, res) => {
 //   res.status(200).json({
 //     message: "Welcome to BodyArchitect API",
@@ -33,24 +32,24 @@ app.use(requestActivity);
 //   });
 // });
 
-app.get("/", PlanController.getHome); 
+app.get("/", PlanController.getHome);
 app.post("/register", UserController.register);
 app.post("/login", UserController.login);
 app.post("/google-login", UserController.googleLogin);
 
 // --- 2. PROTECTED ROUTES (Wajib Login) ---
-app.use(authentication); 
+app.use(authentication);
 
 // A. Dashboard & Profile
-app.get("/dashboard", PlanController.getDashboard); 
+app.get("/dashboard", PlanController.getDashboard);
 app.get("/profile", UserController.getProfile);
-app.put("/profile", UserController.updateProfile); 
+app.put("/profile", UserController.updateProfile);
 
 // B. Daily Plans (CRUD Rencana)
 app.get("/daily-plans", PlanController.getAllPlans);
-app.post("/generate-plan", PlanController.generateCompletePlan); 
-app.post("/daily-plans", PlanController.createPlan); 
-app.put("/daily-plans/:id", PlanController.updatePlan); 
+app.post("/generate-plan", PlanController.generateCompletePlan);
+app.post("/daily-plans", PlanController.createPlan);
+app.put("/daily-plans/:id", PlanController.updatePlan);
 app.delete("/daily-plans/:id", PlanController.deletePlan);
 app.patch("/items/:type/:id", authorization, PlanController.toggleItemStatus);
 
@@ -61,7 +60,6 @@ app.delete("/meals/:id", authorization, PlanController.deleteMeal);
 // --- 3. ADMIN ROUTES (Login + Role Admin) ---
 app.get("/admin/users", guardAdmin, UserController.getAllUsers);
 app.delete("/admin/users/:id", guardAdmin, UserController.deleteUser);
-
 
 app.use(errorHandler);
 

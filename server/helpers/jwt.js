@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const SECRET = process.env.JWT_SECRET || 'inirahasia'; // Pastikan ada di .env
+const jwt = require("jsonwebtoken");
+const SECRET = process.env.JWT_SECRET || "inirahasia";
 
 const signToken = (payload) => {
   return jwt.sign(payload, SECRET);

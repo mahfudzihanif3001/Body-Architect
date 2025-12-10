@@ -1,114 +1,125 @@
-const { User, DailyPlan, Workout, Meal } = require('../models');
-const { generateWorkoutWithAI } = require('../helpers/thirdParty'); // Import Helper AI
-const { Op } = require('sequelize');
+const { User, DailyPlan, Workout, Meal } = require("../models");
+const { generateWorkoutWithAI } = require("../helpers/thirdParty"); // Import Helper AI
+const { Op } = require("sequelize");
 
 class PlanController {
-  
   static async getHome(req, res, next) {
     try {
       const { type, sort, page = 1, limit = 10, search } = req.query;
-      
+
       const queryOptions = {
         where: {},
         limit: parseInt(limit),
         offset: (page - 1) * limit,
-        attributes: ['name', 'type', 'duration_mins', 'calories_burned', 'gifUrl'] 
+        attributes: [
+          "name",
+          "type",
+          "duration_mins",
+          "calories_burned",
+          "gifUrl",
+        ],
       };
 
-      // 1. SEARCH (Berdasarkan Nama)
       if (search) {
-        queryOptions.where.name = { [Op.iLike]: `%${search}%` }; 
+        queryOptions.where.name = { [Op.iLike]: `%${search}%` };
       }
 
       if (type) {
         queryOptions.where.type = type;
       }
 
-      // 3. SORTING
       if (sort) {
         switch (sort) {
-            case 'calories_desc': queryOptions.order = [['calories_burned', 'DESC']]; break;
-            case 'calories_asc': queryOptions.order = [['calories_burned', 'ASC']]; break;
-            case 'duration_desc': queryOptions.order = [['duration_mins', 'DESC']]; break;
-            case 'duration_asc': queryOptions.order = [['duration_mins', 'ASC']]; break;
-            default: queryOptions.order = [['createdAt', 'DESC']];
+          case "calories_desc":
+            queryOptions.order = [["calories_burned", "DESC"]];
+            break;
+          case "calories_asc":
+            queryOptions.order = [["calories_burned", "ASC"]];
+            break;
+          case "duration_desc":
+            queryOptions.order = [["duration_mins", "DESC"]];
+            break;
+          case "duration_asc":
+            queryOptions.order = [["duration_mins", "ASC"]];
+            break;
+          default:
+            queryOptions.order = [["createdAt", "DESC"]];
         }
       } else {
-        queryOptions.order = [['createdAt', 'DESC']];
+        queryOptions.order = [["createdAt", "DESC"]];
       }
 
-      // Eksekusi Query
       const { count, rows } = await Workout.findAndCountAll(queryOptions);
 
       res.status(200).json({
         title: "Workout Library",
         info: "Login to generate your personalized plan!",
         pagination: {
-            totalItems: count,
-            totalPages: Math.ceil(count / limit),
-            currentPage: parseInt(page),
+          totalItems: count,
+          totalPages: Math.ceil(count / limit),
+          currentPage: parseInt(page),
         },
-        data: rows
+        data: rows,
       });
     } catch (error) {
       next(error);
     }
   }
 
-
   static async getDashboard(req, res, next) {
     try {
-      const { role, id } = req.user; // Dari Middleware
+      const { role, id } = req.user;
 
-      if (role === 'admin') {
-        // --- LOGIKA DASHBOARD ADMIN ---
+      if (role === "admin") {
         const totalUsers = await User.count();
-        const totalPlans = await DailyPlan.count({ where: { status: 'active' } });
-        const recentUsers = await User.findAll({ 
-            limit: 5, 
-            order: [['createdAt', 'DESC']],
-            attributes: ['id', 'username', 'email', 'createdAt']
+        const totalPlans = await DailyPlan.count({
+          where: { status: "active" },
+        });
+        const recentUsers = await User.findAll({
+          limit: 5,
+          order: [["createdAt", "DESC"]],
+          attributes: ["id", "username", "email", "createdAt"],
         });
 
         res.status(200).json({
-          role: 'Admin',
+          role: "Admin",
           message: "Welcome back, Admin!",
           statistics: {
             total_users: totalUsers,
-            active_plans: totalPlans
+            active_plans: totalPlans,
           },
-          recent_registrations: recentUsers
+          recent_registrations: recentUsers,
         });
-
       } else {
-        // --- LOGIKA DASHBOARD USER ---
-        const today = new Date().toISOString().split('T')[0];
-        
-        // Cari Plan hari ini
+        const today = new Date().toISOString().split("T")[0];
+
         const myPlan = await DailyPlan.findOne({
           where: { userId: id, date: today },
-          include: [
-            { model: Workout },
-            { model: Meal }
-          ]
+          include: [{ model: Workout }, { model: Meal }],
         });
 
-        // Hitung total kalori hari ini (Virtual field/Manual calc)
         let caloriesBurned = 0;
         let caloriesIntake = 0;
         if (myPlan) {
-            if (myPlan.Workouts) caloriesBurned = myPlan.Workouts.reduce((a, b) => a + b.calories_burned, 0);
-            if (myPlan.Meals) caloriesIntake = myPlan.Meals.reduce((a, b) => a + b.calories, 0);
+          if (myPlan.Workouts)
+            caloriesBurned = myPlan.Workouts.reduce(
+              (a, b) => a + b.calories_burned,
+              0
+            );
+          if (myPlan.Meals)
+            caloriesIntake = myPlan.Meals.reduce((a, b) => a + b.calories, 0);
         }
 
         res.status(200).json({
-          role: 'User',
+          role: "User",
           message: "Let's crush your goals today!",
           today_summary: {
-             calories_intake: caloriesIntake,
-             calories_burned: caloriesBurned
+            calories_intake: caloriesIntake,
+            calories_burned: caloriesBurned,
           },
-          today_plan: myPlan || "You have no plan for today. Click 'Generate Plan' to start!"
+          today_plan:
+            myPlan ||
+            "You have no plan for today. Click 'Generate Plan' to start!",
         });
       }
     } catch (error) {
@@ -116,16 +127,12 @@ class PlanController {
     }
   }
 
-  // =================================================================
-  // PROTECTED: DAILY PLAN CRUD & AI
-  // =================================================================
-
   static async getAllPlans(req, res, next) {
     try {
       const plans = await DailyPlan.findAll({
         where: { userId: req.user.id },
-        order: [['date', 'DESC']],
-        include: [{ model: Workout }, { model: Meal }]
+        order: [["date", "DESC"]],
+        include: [{ model: Workout }, { model: Meal }],
       });
       res.status(200).json(plans);
     } catch (error) {
@@ -139,9 +146,9 @@ class PlanController {
       const newPlan = await DailyPlan.create({
         userId: req.user.id,
         date: date || new Date(),
-        status: status || 'active',
+        status: status || "active",
         totalCaloriesIntake: 0,
-        totalCaloriesBurned: 0
+        totalCaloriesBurned: 0,
       });
       res.status(201).json(newPlan);
     } catch (error) {
@@ -153,8 +160,10 @@ class PlanController {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      
-      const plan = await DailyPlan.findOne({ where: { id, userId: req.user.id } });
+
+      const plan = await DailyPlan.findOne({
+        where: { id, userId: req.user.id },
+      });
       if (!plan) throw { name: "NotFound" };
 
       await plan.update({ status });
@@ -167,7 +176,9 @@ class PlanController {
   static async deletePlan(req, res, next) {
     try {
       const { id } = req.params;
-      const plan = await DailyPlan.findOne({ where: { id, userId: req.user.id } });
+      const plan = await DailyPlan.findOne({
+        where: { id, userId: req.user.id },
+      });
       if (!plan) throw { name: "NotFound" };
 
       await plan.destroy();
@@ -176,8 +187,6 @@ class PlanController {
       next(error);
     }
   }
-
-
 
   static async updateMeal(req, res, next) {
     try {
@@ -204,13 +213,11 @@ class PlanController {
       const userId = req.user.id;
       const user = await User.findByPk(userId);
 
-      // 1. HITUNG ADHERENCE (KEPATUHAN) MINGGU LALU
-      // Cari plan 7 hari terakhir user ini
       const last7DaysPlans = await DailyPlan.findAll({
         where: { userId },
         include: [{ model: Workout }, { model: Meal }],
         limit: 7,
-        order: [['date', 'DESC']]
+        order: [["date", "DESC"]],
       });
 
       let adherenceScore = null;
@@ -219,14 +226,12 @@ class PlanController {
         let totalItems = 0;
         let completedItems = 0;
 
-        last7DaysPlans.forEach(plan => {
-          // Hitung Workout yg diceklis
-          plan.Workouts.forEach(w => {
+        last7DaysPlans.forEach((plan) => {
+          plan.Workouts.forEach((w) => {
             totalItems++;
             if (w.isCompleted) completedItems++;
           });
-          // Hitung Meal yg diceklis
-          plan.Meals.forEach(m => {
+          plan.Meals.forEach((m) => {
             totalItems++;
             if (m.isCompleted) completedItems++;
           });
@@ -249,11 +254,11 @@ class PlanController {
 
       // 3. SIMPAN 7 HARI KE DATABASE
       const today = new Date();
-      
+
       // Loop 7 hari dari AI
       for (let i = 0; i < 7; i++) {
         const dayPlan = aiResult.weekly_plan[i];
-        
+
         // Atur tanggal: Hari ini + i hari
         const planDate = new Date(today);
         planDate.setDate(today.getDate() + i);
@@ -262,23 +267,23 @@ class PlanController {
         const newDailyPlan = await DailyPlan.create({
           userId: user.id,
           date: planDate,
-          status: 'active'
+          status: "active",
         });
 
         // Bulk Insert Workouts
-        const workoutsData = dayPlan.workouts.map(w => ({
+        const workoutsData = dayPlan.workouts.map((w) => ({
           dailyPlanId: newDailyPlan.id,
           name: w.name,
           reps: w.reps, // Asumsi kamu tambah kolom reps di migration workout, atau masuk ke duration
           type: w.type,
           duration_mins: 15,
           calories_burned: 100,
-          isCompleted: false // Default belum diceklis
+          isCompleted: false, // Default belum diceklis
         }));
         await Workout.bulkCreate(workoutsData);
 
         // Bulk Insert Meals
-        const mealsData = dayPlan.meals.map(m => ({
+        const mealsData = dayPlan.meals.map((m) => ({
           dailyPlanId: newDailyPlan.id,
           name: m.name,
           type: m.type, // breakfast, lunch, dinner
@@ -286,17 +291,22 @@ class PlanController {
           protein: 20, // Dummy dulu atau minta AI generate makro detail
           carbs: 30,
           fat: 10,
-          isCompleted: false // Default belum diceklis
+          isCompleted: false, // Default belum diceklis
         }));
         await Meal.bulkCreate(mealsData);
       }
 
-      res.status(201).json({ 
-        message: "7-Day Adaptive Plan Generated Successfully!", 
-        previous_adherence: adherenceScore !== null ? `${adherenceScore.toFixed(1)}%` : "First Time",
-        note: adherenceScore < 50 && adherenceScore !== null ? "We made it easier for you this week!" : "Plan adjusted to your progress."
+      res.status(201).json({
+        message: "7-Day Adaptive Plan Generated Successfully!",
+        previous_adherence:
+          adherenceScore !== null
+            ? `${adherenceScore.toFixed(1)}%`
+            : "First Time",
+        note:
+          adherenceScore < 50 && adherenceScore !== null
+            ? "We made it easier for you this week!"
+            : "Plan adjusted to your progress.",
       });
-
     } catch (error) {
       next(error);
     }
@@ -307,9 +317,9 @@ class PlanController {
       const { type, id } = req.params; // type: 'meal' atau 'workout'
       const { isCompleted } = req.body; // true/false
 
-      if (type === 'meal') {
+      if (type === "meal") {
         await Meal.update({ isCompleted }, { where: { id } });
-      } else if (type === 'workout') {
+      } else if (type === "workout") {
         await Workout.update({ isCompleted }, { where: { id } });
       } else {
         throw { name: "BadRequest", message: "Invalid type" };
