@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { api } from "../helpers/http-client";
 import Swal from "sweetalert2";
 import { format, parseISO } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -27,7 +28,6 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // State Profile Modal
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileForm, setProfileForm] = useState({
     username: "",
@@ -39,6 +39,7 @@ export default function Dashboard() {
     goal: "maintenance",
   });
 
+  // 1. FETCH DASHBOARD DATA
   const fetchData = async () => {
     try {
       const { data } = await api.get("/dashboard");
@@ -54,54 +55,20 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  // --- ACTIONS ---
+  // 2. HANDLE CHECKLIST (MARK AS DONE)
   const handleToggle = async (type, id, currentStatus) => {
     try {
       await api.patch(`/items/${type}/${id}`, { isCompleted: !currentStatus });
       fetchData();
     } catch (error) {
-      Swal.fire("Error", "Update failed", "error");
+      console.log(error);
+
+      Swal.fire({ icon: "error", title: "Error", text: "Update failed" });
     }
   };
 
-  const handleDeleteItem = async (type, id) => {
-    const r = await Swal.fire({
-      title: "Delete?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      confirmButtonText: "Yes",
-    });
-    if (r.isConfirmed) {
-      try {
-        await api.delete(`/${type}s/${id}`);
-        Swal.fire("Deleted!", "", "success");
-        fetchData();
-      } catch (e) {
-        Swal.fire("Error", "Delete failed", "error");
-      }
-    }
-  };
+  // --- 3. PROFILE FUNCTIONS ---
 
-  const handleEditItem = async (type, item) => {
-    const { value: newName } = await Swal.fire({
-      title: `Edit ${type}`,
-      input: "text",
-      inputValue: item.name,
-      showCancelButton: true,
-    });
-    if (newName) {
-      try {
-        await api.put(`/${type}s/${item.id}`, { name: newName });
-        Swal.fire("Updated", "", "success");
-        fetchData();
-      } catch (e) {
-        Swal.fire("Error", "Update failed", "error");
-      }
-    }
-  };
-
-  // --- PROFILE ACTIONS ---
   const handleOpenProfile = async () => {
     try {
       const { data } = await api.get("/profile");
@@ -115,9 +82,16 @@ export default function Dashboard() {
         goal: data.goal,
       });
       setShowProfileModal(true);
-    } catch (e) {
-      Swal.fire("Error", "Failed load profile", "error");
+    } catch (error) {
+      console.log(error);
+
+      Swal.fire("Error", "Failed to load profile", "error");
     }
+  };
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setProfileForm({ ...profileForm, [name]: value });
   };
 
   const handleSaveProfile = async (e) => {
@@ -129,18 +103,23 @@ export default function Dashboard() {
         weight: Number(profileForm.weight),
         height: Number(profileForm.height),
       });
+
       setShowProfileModal(false);
-      Swal.fire("Success", "Profile updated!", "success");
+      Swal.fire("Success", "Profile updated successfully!", "success");
       fetchData();
-    } catch (e) {
-      Swal.fire("Error", "Update failed", "error");
+    } catch (error) {
+      Swal.fire(
+        "Error",
+        error.response?.data?.message || "Update failed",
+        "error"
+      );
     }
   };
 
   if (loading)
     return (
       <div className="text-center mt-5">
-        <div className="spinner-border"></div>
+        <div className="spinner-border text-primary"></div>
       </div>
     );
 
@@ -151,13 +130,13 @@ export default function Dashboard() {
     labels: data?.weekly_stats?.labels || [],
     datasets: [
       {
-        label: "Food",
+        label: "Food (Intake)",
         data: data?.weekly_stats?.intake || [],
         backgroundColor: "rgba(25, 135, 84, 0.7)",
         borderRadius: 4,
       },
       {
-        label: "Burned",
+        label: "Workout (Burned)",
         data: data?.weekly_stats?.burned || [],
         backgroundColor: "rgba(220, 53, 69, 0.7)",
         borderRadius: 4,
@@ -170,18 +149,18 @@ export default function Dashboard() {
       <div className="d-flex justify-content-between align-items-center bg-light p-4 rounded-3 shadow-sm border mt-4 flex-wrap gap-3">
         <div>
           <h1 className="fw-bold m-0">{data?.message}</h1>
-          <div className="d-flex gap-2 mt-2 align-items-center">
+          <div className="d-flex gap-2 align-items-center mt-2">
             <span className="badge bg-dark">{data?.role}</span>
-            {!isAdmin && (
-              <button
-                onClick={handleOpenProfile}
-                className="btn btn-sm btn-outline-primary fw-bold"
-              >
-                👤 Edit Profile
-              </button>
-            )}
+
+            <button
+              onClick={handleOpenProfile}
+              className="btn btn-sm btn-outline-primary fw-bold"
+            >
+              👤 Edit Profile
+            </button>
           </div>
         </div>
+
         {!isAdmin &&
           data?.date_range?.start &&
           data.date_range.start !== "-" && (
@@ -189,7 +168,7 @@ export default function Dashboard() {
               <small className="text-muted fw-bold d-block">ACTIVE PLAN</small>
               <span className="fs-5 fw-bold">
                 {format(parseISO(data.date_range.start), "d MMM")} -{" "}
-                {format(parseISO(data.date_range.end), "d MMM")}
+                {format(parseISO(data.date_range.end), "d MMM yyyy")}
               </span>
             </div>
           )}
@@ -216,7 +195,15 @@ export default function Dashboard() {
             </div>
             <div className="col-lg-8">
               <div className="card border-0 shadow-sm h-100 p-3">
-                <Bar options={{ responsive: true }} data={chartData} />
+                <Bar
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      title: { display: true, text: "Weekly Progress" },
+                    },
+                  }}
+                  data={chartData}
+                />
               </div>
             </div>
           </div>
@@ -231,7 +218,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="row">
-              {/* WORKOUTS */}
+              {/* WORKOUT SECTION */}
               <div className="col-12 mb-5">
                 <div className="d-flex align-items-center gap-2 mb-3">
                   <span className="fs-2">🔥</span>
@@ -249,7 +236,13 @@ export default function Dashboard() {
                       >
                         <div className="card-body d-flex flex-column p-4">
                           <div className="d-flex justify-content-between mb-3">
-                            <span className="badge bg-primary">
+                            <span
+                              className={`badge ${
+                                workout.type === "Strength"
+                                  ? "bg-primary"
+                                  : "bg-warning text-dark"
+                              }`}
+                            >
                               {workout.type}
                             </span>
                             {workout.isCompleted && (
@@ -258,7 +251,6 @@ export default function Dashboard() {
                               </span>
                             )}
                           </div>
-
                           <h5
                             className={`card-title fw-bold mb-3 ${
                               workout.isCompleted
@@ -269,25 +261,28 @@ export default function Dashboard() {
                             {workout.name}
                           </h5>
                           <div className="d-flex justify-content-between align-items-center mb-2">
-                            <div className="text-muted fw-bold">
-                              {workout.duration_mins} mins
+                            <div className="d-flex align-items-center gap-1 text-muted">
+                              <span className="fw-bold">
+                                {workout.duration_mins} mins
+                              </span>
                             </div>
-                            <div className="text-danger fw-bold">
-                              {workout.calories_burned} kcal
+                            <div className="d-flex align-items-center gap-1 text-danger">
+                              <span className="fw-bold">
+                                {workout.calories_burned} kcal
+                              </span>
                             </div>
                           </div>
                           <div className="alert alert-light border mb-4 py-2 px-3 text-center">
                             <small
-                              className="text-muted fw-bold"
+                              className="text-muted fw-bold text-uppercase"
                               style={{ fontSize: "0.7rem" }}
                             >
-                              INSTRUCTION
+                              Instruction
                             </small>
                             <div className="fw-bold text-dark">
-                              {workout.reps}
+                              {workout.reps || "3 sets x 12 reps"}
                             </div>
                           </div>
-
                           <div className="mt-auto d-grid gap-2">
                             <a
                               href={`https://www.youtube.com/results?search_query=how+to+do+${encodeURIComponent(
@@ -323,32 +318,29 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* MEALS */}
               <div className="col-12 mb-5">
                 <h3 className="fw-bold mb-3">🥗 Nutrition Plan</h3>
                 <div className="list-group shadow-sm rounded-4">
                   {data.today_plan.Meals.map((meal) => (
                     <div
                       key={meal.id}
-                      className={`list-group-item d-flex align-items-center gap-3 p-3 ${
+                      className={`list-group-item list-group-item-action d-flex align-items-center gap-3 p-3 ${
                         meal.isCompleted ? "bg-light" : ""
                       }`}
+                      onClick={() =>
+                        handleToggle("meal", meal.id, meal.isCompleted)
+                      }
+                      style={{ cursor: "pointer" }}
                     >
                       <input
                         type="checkbox"
                         checked={meal.isCompleted}
-                        onChange={() =>
-                          handleToggle("meal", meal.id, meal.isCompleted)
-                        }
-                        className="form-check-input flex-shrink-0"
-                        style={{
-                          width: "1.5em",
-                          height: "1.5em",
-                          cursor: "pointer",
-                        }}
+                        readOnly
+                        className="form-check-input"
+                        style={{ width: "1.5em", height: "1.5em" }}
                       />
                       <div className="w-100 d-flex justify-content-between align-items-center">
-                        <div style={{ flexGrow: 1 }}>
+                        <div>
                           <h6
                             className={`mb-0 ${
                               meal.isCompleted
@@ -362,25 +354,9 @@ export default function Dashboard() {
                             {meal.type}
                           </small>
                         </div>
-                        <div className="d-flex align-items-center gap-3">
-                          <span className="fw-bold text-success">
-                            {meal.calories} kcal
-                          </span>
-                          <div className="btn-group">
-                            <button
-                              onClick={() => handleEditItem("meal", meal)}
-                              className="btn btn-outline-secondary btn-sm border-0"
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              onClick={() => handleDeleteItem("meal", meal.id)}
-                              className="btn btn-outline-danger btn-sm border-0"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
+                        <span className="fw-bold text-success">
+                          {meal.calories} kcal
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -444,7 +420,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* MODAL PROFILE */}
       {showProfileModal && (
         <>
           <div className="modal-backdrop fade show"></div>
@@ -454,6 +429,7 @@ export default function Dashboard() {
                 <div className="modal-header">
                   <h5 className="modal-title">Edit My Profile</h5>
                   <button
+                    type="button"
                     className="btn-close"
                     onClick={() => setShowProfileModal(false)}
                   ></button>
@@ -461,65 +437,75 @@ export default function Dashboard() {
                 <div className="modal-body">
                   <form onSubmit={handleSaveProfile}>
                     <div className="mb-3">
-                      <label>Username</label>
+                      <label className="form-label">Username</label>
                       <input
                         name="username"
                         className="form-control"
                         value={profileForm.username}
-                        onChange={(e) =>
-                          setProfileForm({
-                            ...profileForm,
-                            username: e.target.value,
-                          })
-                        }
+                        onChange={handleProfileChange}
+                        required
                       />
                     </div>
                     <div className="row g-2 mb-3">
                       <div className="col">
-                        <label>Weight</label>
+                        <label className="form-label">Weight (kg)</label>
                         <input
                           name="weight"
                           type="number"
                           className="form-control"
                           value={profileForm.weight}
-                          onChange={(e) =>
-                            setProfileForm({
-                              ...profileForm,
-                              weight: e.target.value,
-                            })
-                          }
+                          onChange={handleProfileChange}
+                          required
                         />
                       </div>
                       <div className="col">
-                        <label>Height</label>
+                        <label className="form-label">Height (cm)</label>
                         <input
                           name="height"
                           type="number"
                           className="form-control"
                           value={profileForm.height}
-                          onChange={(e) =>
-                            setProfileForm({
-                              ...profileForm,
-                              height: e.target.value,
-                            })
-                          }
+                          onChange={handleProfileChange}
+                          required
                         />
                       </div>
                       <div className="col">
-                        <label>Age</label>
+                        <label className="form-label">Age</label>
                         <input
                           name="age"
                           type="number"
                           className="form-control"
                           value={profileForm.age}
-                          onChange={(e) =>
-                            setProfileForm({
-                              ...profileForm,
-                              age: e.target.value,
-                            })
-                          }
+                          onChange={handleProfileChange}
+                          required
                         />
                       </div>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Goal</label>
+                      <select
+                        name="goal"
+                        className="form-select"
+                        value={profileForm.goal}
+                        onChange={handleProfileChange}
+                      >
+                        <option value="weight_loss">Weight Loss</option>
+                        <option value="muscle_build">Muscle Build</option>
+                        <option value="maintenance">Maintenance</option>
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Activity Level</label>
+                      <select
+                        name="activityLevel"
+                        className="form-select"
+                        value={profileForm.activityLevel}
+                        onChange={handleProfileChange}
+                      >
+                        <option value="sedentary">Sedentary</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="high">High</option>
+                      </select>
                     </div>
                     <div className="d-flex justify-content-end gap-2">
                       <button

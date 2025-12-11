@@ -45,7 +45,7 @@ app.get("/dashboard", PlanController.getDashboard);
 app.get("/profile", UserController.getProfile);
 app.put("/profile", UserController.updateProfile);
 
-// B. Daily Plans (CRUD Rencana)
+// B. Daily Plans
 app.get("/daily-plans", PlanController.getAllPlans);
 app.post("/generate-plan", PlanController.generateCompletePlan);
 app.post("/daily-plans", PlanController.createPlan);
@@ -53,12 +53,13 @@ app.put("/daily-plans/:id", PlanController.updatePlan);
 app.delete("/daily-plans/:id", PlanController.deletePlan);
 app.patch("/items/:type/:id", authorization, PlanController.toggleItemStatus);
 
-// C. Meals & Workouts (CRUD Item Spesifik)
+// C. Meals & Workouts
 app.put("/meals/:id", authorization, PlanController.updateMeal);
 app.delete("/meals/:id", authorization, PlanController.deleteMeal);
 
-// --- 3. ADMIN ROUTES (Login + Role Admin) ---
+// --- 3. ADMIN ROUTES ---
 app.get("/admin/users", guardAdmin, UserController.getAllUsers);
+app.put("/admin/users/:id", guardAdmin, UserController.updateUserByAdmin);
 app.delete("/admin/users/:id", guardAdmin, UserController.deleteUser);
 
 app.use(errorHandler);
