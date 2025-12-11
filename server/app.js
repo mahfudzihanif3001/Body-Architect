@@ -54,8 +54,8 @@ app.delete("/daily-plans/:id", PlanController.deletePlan);
 app.patch("/items/:type/:id", authorization, PlanController.toggleItemStatus);
 
 // C. Meals & Workouts
-app.put("/meals/:id", authorization, PlanController.updateMeal);
-app.delete("/meals/:id", authorization, PlanController.deleteMeal);
+// app.put("/meals/:id", authorization, PlanController.updateMeal);
+// app.delete("/meals/:id", authorization, PlanController.deleteMeal);
 
 // --- 3. ADMIN ROUTES ---
 app.get("/admin/users", guardAdmin, UserController.getAllUsers);

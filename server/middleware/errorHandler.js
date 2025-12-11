@@ -1,5 +1,5 @@
 const errorHandler = (err, req, res, next) => {
-  console.log("🔥 ERROR LOG:", err.name, "|", err.message);
+  // console.log("ERROR LOG:", err.name, err.message); // Uncomment jika perlu debug
 
   let status = 500;
   let message = "Internal Server Error";
@@ -13,50 +13,34 @@ const errorHandler = (err, req, res, next) => {
 
     case "SequelizeForeignKeyConstraintError":
       status = 400;
-      message = "Data integrity violation: Invalid reference ID";
+      message = "Data integrity violation";
       break;
 
-    case "SequelizeDatabaseError":
-      status = 500;
-      message = "Database query error";
+    case "BadRequest": // Pastikan ini ada!
+      status = 400;
+      message = err.message || "Bad Request";
       break;
 
     case "Unauthenticated":
     case "JsonWebTokenError":
       status = 401;
-      message = "Invalid token or Email/Password is wrong";
-      break;
-
-    case "TokenExpiredError":
-      status = 401;
-      message = "Token expired, please login again";
+      message = "Invalid token";
       break;
 
     case "Forbidden":
       status = 403;
-      message = "You are not authorized to access this resource";
-      break;
-
-    case "BadRequest":
-      status = 400;
-      message = err.message || "Bad Request";
+      message = "You are not authorized";
       break;
 
     case "NotFound":
       status = 404;
-      message = err.message || "Data not found";
+      message = "Data not found";
       break;
 
     case "ThirdPartyError":
     case "AxiosError":
       status = 502;
-      message = "Failed to fetch data from third-party service";
-      if (err.message) message = err.message;
-      break;
-
-    case "GoogleGenerativeAIError":
-      status = 503;
-      message = "AI Service is currently unavailable";
+      message = "Third party service failed";
       break;
 
     default:

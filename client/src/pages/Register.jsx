@@ -34,15 +34,21 @@ export default function Register() {
       });
       Swal.fire({
         icon: "success",
-        title: "Account Created",
-        text: "Please login now.",
+        title: "Welcome Aboard",
+        text: "Identity Verification Complete. Please Login.",
+        background: "#000",
+        color: "#fff",
+        confirmButtonColor: "#fff",
+        confirmButtonText: "PROCEED", // Text hitam otomatis karena button putih
       });
       navigate("/login");
     } catch (error) {
       Swal.fire({
         icon: "error",
-        title: "Error",
+        title: "Registration Failed",
         text: error.response?.data?.message,
+        background: "#000",
+        color: "#fff",
       });
     }
   };
@@ -63,33 +69,43 @@ export default function Register() {
   };
 
   return (
-    <div className="container py-5">
+    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-black py-5">
       <div
-        className="card mx-auto shadow-lg border-0"
-        style={{ maxWidth: "700px", borderRadius: "15px" }}
+        className="glass-panel p-4 p-md-5 m-3"
+        style={{ width: "100%", maxWidth: "800px" }}
       >
-        <div className="card-header bg-white border-0 text-center pt-4">
-          <h2 className="fw-bold">Create Account</h2>
-          <p className="text-muted">Join Body Architect today</p>
+        <div className="text-center mb-5">
+          <h2 className="display-6 fw-bold mb-2">
+            NEW MEMBER
+            <br />
+            APPLICATION
+          </h2>
+          <p className="text-muted-light small text-uppercase">
+            Architect your body starting today
+          </p>
         </div>
 
-        <div className="card-body p-4">
-          <div className="d-flex justify-content-center mb-4">
-            <GoogleLogin
-              onSuccess={handleGoogleRegister}
-              onError={() => {}}
-              text="signup_with"
-              width="300"
-            />
-          </div>
+        <div className="d-flex justify-content-center mb-4">
+          <GoogleLogin
+            onSuccess={handleGoogleRegister}
+            theme="filled_black"
+            shape="rectangular"
+            width="300"
+          />
+        </div>
 
-          <div className="text-center mb-4 text-muted small border-bottom pb-3">
-            OR REGISTER MANUALLY
-          </div>
+        <div
+          className="text-center mb-4 text-muted-light small border-bottom border-secondary pb-3 mx-auto"
+          style={{ maxWidth: "200px" }}
+        >
+          OR MANUAL INPUT
+        </div>
 
-          <form onSubmit={handleSubmit} className="row g-3">
-            <div className="col-md-6">
-              <label className="form-label small fw-bold">Username</label>
+        <form onSubmit={handleSubmit}>
+          {/* Account Info */}
+          <div className="row g-3 mb-4">
+            <div className="col-md-4">
+              <label className="form-label">Username</label>
               <input
                 name="username"
                 className="form-control"
@@ -97,8 +113,8 @@ export default function Register() {
                 required
               />
             </div>
-            <div className="col-md-6">
-              <label className="form-label small fw-bold">Email</label>
+            <div className="col-md-4">
+              <label className="form-label">Email</label>
               <input
                 name="email"
                 type="email"
@@ -107,8 +123,8 @@ export default function Register() {
                 required
               />
             </div>
-            <div className="col-12">
-              <label className="form-label small fw-bold">Password</label>
+            <div className="col-md-4">
+              <label className="form-label">Password</label>
               <input
                 name="password"
                 type="password"
@@ -117,14 +133,19 @@ export default function Register() {
                 required
               />
             </div>
+          </div>
 
-            <div className="col-12">
-              <hr className="text-muted my-2" />
-            </div>
-            <h6 className="fw-bold text-primary">Body Stats</h6>
+          <h6
+            className="text-white border-bottom border-secondary pb-2 mb-3 mt-4 fw-bold text-uppercase"
+            style={{ fontSize: "0.8rem", letterSpacing: "2px" }}
+          >
+            Body Metrics
+          </h6>
 
-            <div className="col-md-3">
-              <label className="form-label small">Age</label>
+          {/* Stats Grid */}
+          <div className="row g-3 mb-4">
+            <div className="col-6 col-md-3">
+              <label className="form-label">Age</label>
               <input
                 name="age"
                 type="number"
@@ -133,8 +154,8 @@ export default function Register() {
                 required
               />
             </div>
-            <div className="col-md-3">
-              <label className="form-label small">Height (cm)</label>
+            <div className="col-6 col-md-3">
+              <label className="form-label">Height (cm)</label>
               <input
                 name="height"
                 type="number"
@@ -143,8 +164,8 @@ export default function Register() {
                 required
               />
             </div>
-            <div className="col-md-3">
-              <label className="form-label small">Weight (kg)</label>
+            <div className="col-6 col-md-3">
+              <label className="form-label">Weight (kg)</label>
               <input
                 name="weight"
                 type="number"
@@ -153,8 +174,8 @@ export default function Register() {
                 required
               />
             </div>
-            <div className="col-md-3">
-              <label className="form-label small">Gender</label>
+            <div className="col-6 col-md-3">
+              <label className="form-label">Gender</label>
               <select
                 name="gender"
                 className="form-select"
@@ -164,21 +185,25 @@ export default function Register() {
                 <option value="female">Female</option>
               </select>
             </div>
+          </div>
 
+          <div className="row g-3 mb-5">
             <div className="col-md-6">
-              <label className="form-label small">Activity Level</label>
+              <label className="form-label">Activity Level</label>
               <select
                 name="activityLevel"
                 className="form-select"
                 onChange={handleChange}
               >
-                <option value="sedentary">Sedentary</option>
-                <option value="moderate">Moderate</option>
-                <option value="high">High</option>
+                <option value="sedentary">
+                  Sedentary (Little/No Exercise)
+                </option>
+                <option value="moderate">Moderate (3-5 days/week)</option>
+                <option value="high">High (Active Job/Daily Exercise)</option>
               </select>
             </div>
             <div className="col-md-6">
-              <label className="form-label small">Goal</label>
+              <label className="form-label">Goal</label>
               <select
                 name="goal"
                 className="form-select"
@@ -189,16 +214,20 @@ export default function Register() {
                 <option value="maintenance">Maintenance</option>
               </select>
             </div>
-
-            <div className="col-12 mt-4">
-              <button type="submit" className="btn btn-warning w-100 fw-bold">
-                Create Account
-              </button>
-            </div>
-          </form>
-          <div className="text-center mt-3">
-            <Link to="/login">Already have an account? Login</Link>
           </div>
+
+          <button type="submit" className="btn btn-mono w-100 py-3 mb-4">
+            CREATE ACCOUNT
+          </button>
+        </form>
+
+        <div className="text-center">
+          <Link
+            to="/login"
+            className="text-white small text-decoration-none border-bottom hover-opacity"
+          >
+            ALREADY A MEMBER? LOGIN HERE
+          </Link>
         </div>
       </div>
     </div>

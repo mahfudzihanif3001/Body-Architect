@@ -5,150 +5,147 @@ import { api } from "../helpers/http-client";
 export default function Home() {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const token = localStorage.getItem("access_token");
-
-  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
   const [sort, setSort] = useState("createdAt_desc");
-  const [, setTotalPages] = useState(1);
 
+  // Fetch logic remains same (omitted for brevity, assume fetchExercises is here)
   useEffect(() => {
     const fetchExercises = async () => {
       setLoading(true);
       try {
         const { data } = await api.get("/", {
-          params: { page, limit: 9, search, type, sort },
+          params: { limit: 9, search, type, sort },
         });
         setExercises(data.data);
-        setTotalPages(data.pagination.totalPages);
       } catch (error) {
-        console.error("Failed to fetch exercises", error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
     };
-    const timeoutId = setTimeout(() => {
-      fetchExercises();
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [page, search, type, sort]);
-
-  const handleFilterChange = (setter, value) => {
-    setter(value);
-    setPage(1);
-  };
+    fetchExercises();
+  }, [search, type, sort]);
 
   return (
-    <div className="pb-5">
-      <div className="px-4 py-5 text-center bg-dark text-white mb-5 shadow">
-        <h1 className="display-4 fw-bold">Body Architect</h1>
-        <div className="col-lg-6 mx-auto">
-          <p className="lead mb-4 text-white-50">
-            Transform your body with science-backed, AI-generated meal and
-            workout plans.
-          </p>
-
-          <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
-            {!token ? (
-              <>
-                <Link
-                  to="/register"
-                  className="btn btn-warning btn-lg px-4 gap-3 fw-bold"
-                >
-                  Get Started
-                </Link>
-                <Link to="/login" className="btn btn-outline-light btn-lg px-4">
-                  Login
-                </Link>
-              </>
-            ) : (
-              <Link
-                to="/dashboard"
-                className="btn btn-success btn-lg px-5 gap-3 fw-bold shadow"
-              >
-                Go to Dashboard &raquo;
-              </Link>
-            )}
-          </div>
+    <div className="min-vh-100 position-relative pt-5">
+      {/* BACKGROUND MARQUEE */}
+      <div className="marquee-container">
+        <div className="marquee-content">
+          ARCHITECT YOUR BODY • DESIGN YOUR STRENGTH • BUILD YOUR LEGACY •
+          ARCHITECT YOUR BODY • DESIGN YOUR STRENGTH • BUILD YOUR LEGACY •
         </div>
       </div>
 
-      <div className="container">
-        <div className="text-center mb-4">
-          <h2 className="fw-bold">🔥 Workout Library</h2>
-        </div>
+      {/* HERO SECTION */}
+      <div
+        className="container position-relative d-flex flex-column justify-content-center align-items-center text-center"
+        style={{ minHeight: "80vh" }}
+      >
+        <h1 className="display-giant mb-2">
+          BODY
+          <br />
+          ARCHITECT
+        </h1>
+        <p className="lead text-white-50 mb-5" style={{ maxWidth: "500px" }}>
+          Precision engineered AI-generated meal and workout plans.
+        </p>
 
-        <div className="row g-2 mb-4 bg-light p-3 rounded shadow-sm">
-          <div className="col-md-4">
-            <input
-              className="form-control"
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => handleFilterChange(setSearch, e.target.value)}
-            />
-          </div>
-          <div className="col-md-3">
-            <select
-              className="form-select"
-              value={type}
-              onChange={(e) => handleFilterChange(setType, e.target.value)}
-            >
-              <option value="">All Types</option>
-              <option value="Strength">Strength</option>
-              <option value="Cardio">Cardio</option>
-            </select>
-          </div>
-          <div className="col-md-3">
-            <select
-              className="form-select"
-              value={sort}
-              onChange={(e) => handleFilterChange(setSort, e.target.value)}
-            >
-              <option value="createdAt_desc">Newest</option>
-              <option value="calories_desc">Calories High</option>
-            </select>
-          </div>
-          <div className="col-md-2">
-            <button
-              className="btn btn-secondary w-100"
-              onClick={() => {
-                setSearch("");
-                setType("");
-                setSort("createdAt_desc");
-              }}
-            >
-              Reset
-            </button>
+        <div className="d-flex gap-3">
+          {!token ? (
+            <>
+              <Link to="/register" className="btn btn-mono btn-lg px-5">
+                Get Started
+              </Link>
+              <Link to="/login" className="btn btn-outline-mono btn-lg px-5">
+                Login
+              </Link>
+            </>
+          ) : (
+            <Link to="/dashboard" className="btn btn-mono btn-lg px-5">
+              Go to Dashboard
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* LIBRARY SECTION */}
+      <div className="container pb-5">
+        <div className="glass-panel p-4 mb-5">
+          <div className="row g-3">
+            <div className="col-md-6">
+              <input
+                className="form-control text-white"
+                placeholder="SEARCH WORKOUTS..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="col-md-3">
+              <select
+                className="form-select"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+              >
+                <option value="">ALL TYPES</option>
+                <option value="Strength">STRENGTH</option>
+                <option value="Cardio">CARDIO</option>
+              </select>
+            </div>
+            <div className="col-md-3">
+              <select
+                className="form-select"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="createdAt_desc">NEWEST</option>
+                <option value="calories_desc">CALORIES HIGH</option>
+              </select>
+            </div>
           </div>
         </div>
 
         {loading ? (
           <div className="text-center py-5">
-            <div className="spinner-border"></div>
+            <div className="spinner-border text-white"></div>
           </div>
         ) : (
-          <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+          <div className="row row-cols-1 row-cols-md-3 g-4">
             {exercises.map((item, idx) => (
               <div className="col" key={idx}>
-                <div className="card h-100 border-0 shadow-sm rounded-4 bg-white">
-                  <div className="card-body p-4">
-                    <span className="badge bg-warning text-dark mb-3">
+                <div className="glass-panel h-100 p-4 d-flex flex-column hover-effect">
+                  <div className="d-flex justify-content-between mb-4">
+                    {/* Badge putih teks hitam untuk kontras tinggi */}
+                    <span className="badge bg-white text-black rounded-0 text-uppercase fw-bold p-2">
                       {item.type}
                     </span>
-                    <h5 className="fw-bold">{item.name}</h5>
-                    <div className="d-flex justify-content-between text-muted small my-3">
-                      <span>{item.duration_mins || 15} mins</span>
-                      <span>{item.calories_burned} kcal</span>
-                    </div>
-                    <a
-                      href={`https://www.youtube.com/results?search_query=${item.name}`}
-                      target="_blank"
-                      className="btn btn-outline-danger btn-sm w-100"
+                    {/* GUNAKAN CLASS BARU: text-muted-light */}
+                    <small
+                      className="text-muted-light fw-bold"
+                      style={{ letterSpacing: "1px" }}
                     >
-                      Watch Tutorial
-                    </a>
+                      {item.calories_burned} KCAL
+                    </small>
+                  </div>
+
+                  <h3 className="fw-bold mb-4 text-uppercase text-white">
+                    {item.name}
+                  </h3>
+
+                  <div className="mt-auto">
+                    <div className="d-flex justify-content-between align-items-end border-top border-secondary pt-3">
+                      <span className="fs-5 fw-bold text-white">
+                        {item.duration_mins} MIN
+                      </span>
+                      <a
+                        href={`https://youtube.com/results?search_query=${item.name}`}
+                        target="_blank"
+                        className="text-white text-decoration-none small fw-bold"
+                      >
+                        WATCH TUTORIAL ↗
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -7,6 +7,8 @@ const authentication = async (req, res, next) => {
     if (!authorization) throw { name: "Unauthenticated" };
 
     const token = authorization.split(" ")[1];
+    if (!token) throw { name: "Unauthenticated" };
+
     const payload = verifyToken(token);
 
     const user = await User.findByPk(payload.id);
@@ -19,7 +21,11 @@ const authentication = async (req, res, next) => {
     };
     next();
   } catch (err) {
-    next(err);
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      next({ name: "Unauthenticated" });
+    } else {
+      next(err);
+    }
   }
 };
 

@@ -57,63 +57,56 @@ export default function Login() {
   };
 
   return (
-    <div className="container d-flex justify-content-center align-items-center vh-100 bg-light">
+    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-black pt-5">
       <div
-        className="card border-0 shadow-lg p-4"
-        style={{ width: "400px", borderRadius: "15px" }}
+        className="glass-panel p-5 m-3"
+        style={{ width: "100%", maxWidth: "450px" }}
       >
-        <div className="text-center mb-4">
-          <h2 className="fw-bold text-dark">Welcome Back</h2>
-          <p className="text-muted">Login to manage your body goals</p>
-        </div>
+        <h2 className="display-6 fw-bold mb-4 text-center">LOGIN ACCOUNT</h2>
 
         <form onSubmit={handleLogin}>
-          <div className="mb-3">
-            <label className="form-label fw-bold small">Email Address</label>
+          <div className="mb-4">
+            <label className="form-label mb-2">Email Address</label>
             <input
               type="email"
-              className="form-control form-control-lg"
-              placeholder="name@example.com"
+              className="form-control"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
-          <div className="mb-4">
-            <label className="form-label fw-bold small">Password</label>
+          <div className="mb-5">
+            <label className="form-label mb-2">Password</label>
             <input
               type="password"
-              className="form-control form-control-lg"
-              placeholder="••••••"
+              className="form-control"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
-          <button type="submit" className="btn btn-dark w-100 btn-lg mb-3">
-            Sign In
+
+          <button type="submit" className="btn btn-mono w-100 py-3 mb-4">
+            ENTER SYSTEM
           </button>
         </form>
 
-        <div className="text-center mb-3 text-muted small">OR</div>
-
-        <div className="d-flex justify-content-center mb-4">
-          <GoogleLogin
-            onSuccess={handleGoogleLogin}
-            onError={() => console.log("Login Failed")}
-            theme="filled_blue"
-            shape="circle"
-            width="320"
-          />
-        </div>
-
         <div className="text-center">
-          <p className="small text-muted">
-            Don't have an account?{" "}
-            <Link to="/register" className="fw-bold text-decoration-none">
-              Register Here
-            </Link>
-          </p>
+          <p className="form-label mb-2">OR</p>
+          <div className="d-flex justify-content-center mb-4">
+            {/* Note: Customize Google Button CSS might be hard, wrapper needed */}
+            <GoogleLogin
+              onSuccess={handleGoogleLogin}
+              theme="filled_black"
+              shape="rectangular"
+            />
+          </div>
+          <Link
+            to="/register"
+            className="text-white small text-decoration-none border-bottom"
+          >
+            CREATE NEW ACCOUNT
+          </Link>
         </div>
       </div>
     </div>

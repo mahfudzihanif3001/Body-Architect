@@ -30,13 +30,11 @@ class UserController {
         goal,
         tdee: 2000,
       });
-      res
-        .status(201)
-        .json({
-          id: newUser.id,
-          email: newUser.email,
-          message: "Register success",
-        });
+      res.status(201).json({
+        id: newUser.id,
+        email: newUser.email,
+        message: "Register success",
+      });
     } catch (error) {
       next(error);
     }
@@ -137,11 +135,11 @@ class UserController {
         order: [["createdAt", "DESC"]],
         include: [
           {
-            model: DailyPlan, // Pastikan model ini sudah di-require di atas
+            model: DailyPlan,
             attributes: ["status", "date"],
             limit: 1,
             order: [["date", "DESC"]],
-            required: false, // Agar user tanpa plan tetap muncul
+            required: false,
           },
         ],
       });
@@ -161,7 +159,7 @@ class UserController {
 
       res.status(200).json(formattedUsers);
     } catch (error) {
-      console.log("Error getAllUsers:", error); // Log error biar kelihatan di terminal
+      console.log("Error getAllUsers:", error);
       next(error);
     }
   }

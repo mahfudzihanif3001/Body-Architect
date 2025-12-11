@@ -11,17 +11,15 @@ export default function GeneratePlan() {
     setLoading(true);
     try {
       await api.post("/generate-plan");
-      Swal.fire({
-        icon: "success",
-        title: "Plan Generated!",
-        text: "Your 7-day workout & meal plan is ready.",
-      });
       navigate("/dashboard");
     } catch (error) {
+      console.log(error);
+
       Swal.fire({
         icon: "error",
         title: "Failed",
-        text: error.response?.data?.message || "AI Service Timeout",
+        background: "#000",
+        color: "#fff",
       });
     } finally {
       setLoading(false);
@@ -29,28 +27,26 @@ export default function GeneratePlan() {
   };
 
   return (
-    <div className="container text-center mt-5">
-      <h1 className="display-4 fw-bold mb-3">AI Workout Generator</h1>
-      <p className="lead text-muted mb-5">
-        Let our advanced AI build a personalized 7-day routine based on your
-        body stats and goals.
+    <div className="d-flex flex-column justify-content-center align-items-center min-vh-100 text-center container">
+      <h1 className="display-1 fw-bold mb-4">LETS GENERATE</h1>
+      <p className="form-label mb-2" style={{ maxWidth: "600px" }}>
+        AI analysis of your biometrics is ready. Generate your 7-day
+        high-performance schedule now.
       </p>
 
-      <div className="d-flex justify-content-center">
-        {loading ? (
-          <button className="btn btn-secondary btn-lg disabled px-5 py-3">
-            <span className="spinner-border spinner-border-sm me-2"></span>
-            Generating Plan...
-          </button>
-        ) : (
-          <button
-            onClick={handleGenerate}
-            className="btn btn-warning btn-lg px-5 py-3 fw-bold shadow"
-          >
-            ✨ Generate My Plan Now
-          </button>
-        )}
-      </div>
+      {loading ? (
+        <div
+          className="spinner-border text-white"
+          style={{ width: "3rem", height: "3rem" }}
+        ></div>
+      ) : (
+        <button
+          onClick={handleGenerate}
+          className="btn btn-mono btn-lg px-5 py-4 fs-4"
+        >
+          GENERATE
+        </button>
+      )}
     </div>
   );
 }

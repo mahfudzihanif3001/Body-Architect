@@ -305,25 +305,25 @@ class PlanController {
     }
   }
 
-  static async updateMeal(req, res, next) {
-    try {
-      const { id } = req.params;
-      await Meal.update(req.body, { where: { id } });
-      res.status(200).json({ message: "Meal updated" });
-    } catch (error) {
-      next(error);
-    }
-  }
+  // static async updateMeal(req, res, next) {
+  //   try {
+  //     const { id } = req.params;
+  //     await Meal.update(req.body, { where: { id } });
+  //     res.status(200).json({ message: "Meal updated" });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
 
-  static async deleteMeal(req, res, next) {
-    try {
-      const { id } = req.params;
-      await Meal.destroy({ where: { id } });
-      res.status(200).json({ message: "Meal deleted" });
-    } catch (error) {
-      next(error);
-    }
-  }
+  // static async deleteMeal(req, res, next) {
+  //   try {
+  //     const { id } = req.params;
+  //     await Meal.destroy({ where: { id } });
+  //     res.status(200).json({ message: "Meal deleted" });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
 
   static async toggleItemStatus(req, res, next) {
     try {
