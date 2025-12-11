@@ -45,6 +45,8 @@ export default function AdminUsers() {
         fetchUsers();
       }
     } catch (error) {
+      console.log(error);
+
       Swal.fire("Error", "Failed to delete user", "error");
     }
   };
@@ -189,7 +191,6 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* EDIT MODAL */}
       {showModal && editForm && (
         <>
           <div className="modal-backdrop fade show"></div>
