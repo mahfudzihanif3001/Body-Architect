@@ -10,8 +10,9 @@
     "username": "postgres",
     "password": "postgres",
     "database": "body_architect_test",
-    "host": "localhost",
-    "dialect": "postgres"
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "logging": false
   },
   "production": {
     "username": "root",

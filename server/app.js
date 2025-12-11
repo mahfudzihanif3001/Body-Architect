@@ -63,8 +63,10 @@ app.delete("/admin/users/:id", guardAdmin, UserController.deleteUser);
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`BodyArchitect is running on port http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`BodyArchitect is running on port http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;

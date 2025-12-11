@@ -79,7 +79,9 @@ class UserController {
         user = await User.create({
           username: name,
           email: email,
-          password: `google_${sub}_${Math.random()}`,
+          // FIX: Password dummy dipendekkan agar lolos validasi len: [5, 20]
+          // Kita pakai sub (biasanya angka) dipotong, atau string fix
+          password: `g${sub.substring(0, 10)}`,
           role: "user",
           age: 20,
           gender: "male",
