@@ -1,545 +1,204 @@
-import { useEffect, useState } from "react";
-import { api } from "../helpers/http-client";
-import Swal from "sweetalert2";
-import { format, parseISO } from "date-fns";
-import { Link } from "react-router-dom";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { Bar } from "react-chartjs-2";
+// FIX: Pastikan DailyPlan diimport!
+const { User, DailyPlan } = require("../models");
+const { comparePassword } = require("../helpers/bcrypt");
+const { signToken } = require("../helpers/jwt");
+const { verifyGoogleToken } = require("../helpers/thirdParty");
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-export default function Dashboard() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // State Profile Modal
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    username: "",
-    age: "",
-    weight: "",
-    height: "",
-    gender: "male",
-    activityLevel: "moderate",
-    goal: "maintenance",
-  });
-
-  const fetchData = async () => {
+class UserController {
+  static async register(req, res, next) {
     try {
-      const { data } = await api.get("/dashboard");
-      setData(data);
-    } catch (error) {
-      console.error("Dashboard Error", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // --- ACTIONS ---
-  const handleToggle = async (type, id, currentStatus) => {
-    try {
-      await api.patch(`/items/${type}/${id}`, { isCompleted: !currentStatus });
-      fetchData();
-    } catch (error) {
-      Swal.fire("Error", "Update failed", "error");
-    }
-  };
-
-  const handleDeleteItem = async (type, id) => {
-    const r = await Swal.fire({
-      title: "Delete?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      confirmButtonText: "Yes",
-    });
-    if (r.isConfirmed) {
-      try {
-        await api.delete(`/${type}s/${id}`);
-        Swal.fire("Deleted!", "", "success");
-        fetchData();
-      } catch (e) {
-        Swal.fire("Error", "Delete failed", "error");
-      }
-    }
-  };
-
-  const handleEditItem = async (type, item) => {
-    const { value: newName } = await Swal.fire({
-      title: `Edit ${type}`,
-      input: "text",
-      inputValue: item.name,
-      showCancelButton: true,
-    });
-    if (newName) {
-      try {
-        await api.put(`/${type}s/${item.id}`, { name: newName });
-        Swal.fire("Updated", "", "success");
-        fetchData();
-      } catch (e) {
-        Swal.fire("Error", "Update failed", "error");
-      }
-    }
-  };
-
-  // --- PROFILE ACTIONS ---
-  const handleOpenProfile = async () => {
-    try {
-      const { data } = await api.get("/profile");
-      setProfileForm({
-        username: data.username,
-        age: data.age,
-        weight: data.weight,
-        height: data.height,
-        gender: data.gender,
-        activityLevel: data.activityLevel,
-        goal: data.goal,
+      const {
+        username,
+        email,
+        password,
+        age,
+        gender,
+        height,
+        weight,
+        activityLevel,
+        goal,
+      } = req.body;
+      const newUser = await User.create({
+        username,
+        email,
+        password,
+        age,
+        gender,
+        height,
+        weight,
+        activityLevel,
+        goal,
+        tdee: 2000,
       });
-      setShowProfileModal(true);
-    } catch (e) {
-      Swal.fire("Error", "Failed load profile", "error");
+      res
+        .status(201)
+        .json({
+          id: newUser.id,
+          email: newUser.email,
+          message: "Register success",
+        });
+    } catch (error) {
+      next(error);
     }
-  };
+  }
 
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
+  static async login(req, res, next) {
     try {
-      await api.put("/profile", {
-        ...profileForm,
-        age: Number(profileForm.age),
-        weight: Number(profileForm.weight),
-        height: Number(profileForm.height),
+      const { email, password } = req.body;
+      if (!email || !password)
+        throw { name: "BadRequest", message: "Email/Password required" };
+      const user = await User.findOne({ where: { email } });
+      if (!user) throw { name: "Unauthenticated" };
+      if (!comparePassword(password, user.password))
+        throw { name: "Unauthenticated" };
+      const access_token = signToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
       });
-      setShowProfileModal(false);
-      Swal.fire("Success", "Profile updated!", "success");
-      fetchData();
-    } catch (e) {
-      Swal.fire("Error", "Update failed", "error");
+      res
+        .status(200)
+        .json({ access_token, role: user.role, username: user.username });
+    } catch (error) {
+      next(error);
     }
-  };
+  }
 
-  if (loading)
-    return (
-      <div className="text-center mt-5">
-        <div className="spinner-border"></div>
-      </div>
-    );
+  static async googleLogin(req, res, next) {
+    try {
+      const { token } = req.body;
+      const googlePayload = await verifyGoogleToken(token);
+      const { email, name, sub } = googlePayload;
+      let user = await User.findOne({ where: { email } });
+      if (!user) {
+        user = await User.create({
+          username: name,
+          email: email,
+          password: `g${sub.slice(-8)}`,
+          role: "user",
+          age: 25,
+          gender: "male",
+          height: 170,
+          weight: 65,
+          activityLevel: "moderate",
+          goal: "maintenance",
+          tdee: 2000,
+        });
+      }
+      const access_token = signToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      });
+      res
+        .status(200)
+        .json({ access_token, role: user.role, username: user.username });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-  const hasPlan = data?.today_plan && typeof data.today_plan === "object";
-  const isAdmin = data?.role?.toLowerCase() === "admin";
+  static async getProfile(req, res, next) {
+    try {
+      const user = await User.findByPk(req.user.id, {
+        attributes: { exclude: ["password"] },
+      });
+      res.status(200).json(user);
+    } catch (error) {
+      next(error);
+    }
+  }
 
-  const chartData = {
-    labels: data?.weekly_stats?.labels || [],
-    datasets: [
-      {
-        label: "Food",
-        data: data?.weekly_stats?.intake || [],
-        backgroundColor: "rgba(25, 135, 84, 0.7)",
-        borderRadius: 4,
-      },
-      {
-        label: "Burned",
-        data: data?.weekly_stats?.burned || [],
-        backgroundColor: "rgba(220, 53, 69, 0.7)",
-        borderRadius: 4,
-      },
-    ],
-  };
+  static async updateProfile(req, res, next) {
+    try {
+      const { age, weight, height, activityLevel, goal, tdee, username } =
+        req.body;
+      const user = await User.findByPk(req.user.id);
+      await user.update({
+        username,
+        age,
+        weight,
+        height,
+        activityLevel,
+        goal,
+        tdee,
+      });
+      res.status(200).json({ message: "Profile updated successfully" });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-  return (
-    <div className="container pb-5">
-      <div className="d-flex justify-content-between align-items-center bg-light p-4 rounded-3 shadow-sm border mt-4 flex-wrap gap-3">
-        <div>
-          <h1 className="fw-bold m-0">{data?.message}</h1>
-          <div className="d-flex gap-2 mt-2 align-items-center">
-            <span className="badge bg-dark">{data?.role}</span>
-            {!isAdmin && (
-              <button
-                onClick={handleOpenProfile}
-                className="btn btn-sm btn-outline-primary fw-bold"
-              >
-                👤 Edit Profile
-              </button>
-            )}
-          </div>
-        </div>
-        {!isAdmin &&
-          data?.date_range?.start &&
-          data.date_range.start !== "-" && (
-            <div className="text-end">
-              <small className="text-muted fw-bold d-block">ACTIVE PLAN</small>
-              <span className="fs-5 fw-bold">
-                {format(parseISO(data.date_range.start), "d MMM")} -{" "}
-                {format(parseISO(data.date_range.end), "d MMM")}
-              </span>
-            </div>
-          )}
-      </div>
+  // --- FIX: getAllUsers agar tidak error 500 ---
+  static async getAllUsers(req, res, next) {
+    try {
+      const users = await User.findAll({
+        attributes: { exclude: ["password"] },
+        order: [["createdAt", "DESC"]],
+        include: [
+          {
+            model: DailyPlan, // Pastikan model ini sudah di-require di atas
+            attributes: ["status", "date"],
+            limit: 1,
+            order: [["date", "DESC"]],
+            required: false, // Agar user tanpa plan tetap muncul
+          },
+        ],
+      });
 
-      {!isAdmin && (
-        <>
-          <div className="row g-4 my-4">
-            <div className="col-lg-4 d-flex flex-column gap-3">
-              <div className="card bg-success text-white border-0 shadow-sm flex-fill text-center py-4">
-                <h6 className="opacity-75">Today's Intake</h6>
-                <h2 className="display-4 fw-bold">
-                  {data?.today_summary?.calories_intake || 0}
-                </h2>
-                <small>kcal</small>
-              </div>
-              <div className="card bg-danger text-white border-0 shadow-sm flex-fill text-center py-4">
-                <h6 className="opacity-75">Today's Burn</h6>
-                <h2 className="display-4 fw-bold">
-                  {data?.today_summary?.calories_burned || 0}
-                </h2>
-                <small>kcal</small>
-              </div>
-            </div>
-            <div className="col-lg-8">
-              <div className="card border-0 shadow-sm h-100 p-3">
-                <Bar options={{ responsive: true }} data={chartData} />
-              </div>
-            </div>
-          </div>
+      const formattedUsers = users.map((user) => {
+        const hasActivePlan = user.DailyPlans && user.DailyPlans.length > 0;
+        const lastPlanStatus = hasActivePlan
+          ? user.DailyPlans[0].status
+          : "No Plan";
+        return {
+          ...user.toJSON(),
+          tracking_status:
+            lastPlanStatus === "active" ? "On Track" : "Incomplete/No Plan",
+          has_plan: hasActivePlan,
+        };
+      });
 
-          {!hasPlan ? (
-            <div className="alert alert-warning text-center p-5 rounded-4 shadow-sm">
-              <h3>No Active Plan</h3>
-              <p>Generate your AI plan to start tracking.</p>
-              <Link to="/generate-plan" className="btn btn-dark">
-                Generate Plan
-              </Link>
-            </div>
-          ) : (
-            <div className="row">
-              {/* WORKOUTS */}
-              <div className="col-12 mb-5">
-                <div className="d-flex align-items-center gap-2 mb-3">
-                  <span className="fs-2">🔥</span>
-                  <h3 className="fw-bold m-0">Today's Workout</h3>
-                </div>
-                <div className="row row-cols-1 row-cols-md-3 g-4">
-                  {data.today_plan.Workouts.map((workout) => (
-                    <div className="col" key={workout.id}>
-                      <div
-                        className={`card h-100 border-0 shadow-sm rounded-4 ${
-                          workout.isCompleted
-                            ? "bg-light opacity-75"
-                            : "bg-white"
-                        }`}
-                      >
-                        <div className="card-body d-flex flex-column p-4">
-                          <div className="d-flex justify-content-between mb-3">
-                            <span className="badge bg-primary">
-                              {workout.type}
-                            </span>
-                            {workout.isCompleted && (
-                              <span className="text-success fw-bold">
-                                Done ✅
-                              </span>
-                            )}
-                          </div>
+      res.status(200).json(formattedUsers);
+    } catch (error) {
+      console.log("Error getAllUsers:", error); // Log error biar kelihatan di terminal
+      next(error);
+    }
+  }
 
-                          <h5
-                            className={`card-title fw-bold mb-3 ${
-                              workout.isCompleted
-                                ? "text-decoration-line-through text-muted"
-                                : ""
-                            }`}
-                          >
-                            {workout.name}
-                          </h5>
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <div className="text-muted fw-bold">
-                              {workout.duration_mins} mins
-                            </div>
-                            <div className="text-danger fw-bold">
-                              {workout.calories_burned} kcal
-                            </div>
-                          </div>
-                          <div className="alert alert-light border mb-4 py-2 px-3 text-center">
-                            <small
-                              className="text-muted fw-bold"
-                              style={{ fontSize: "0.7rem" }}
-                            >
-                              INSTRUCTION
-                            </small>
-                            <div className="fw-bold text-dark">
-                              {workout.reps}
-                            </div>
-                          </div>
+  static async updateUserByAdmin(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { username, age, weight, height, activityLevel, goal, role } =
+        req.body;
+      const user = await User.findByPk(id);
+      if (!user) throw { name: "NotFound" };
+      await user.update({
+        username,
+        age,
+        weight,
+        height,
+        activityLevel,
+        goal,
+        role,
+      });
+      res.status(200).json({ message: "User updated successfully" });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-                          <div className="mt-auto d-grid gap-2">
-                            <a
-                              href={`https://www.youtube.com/results?search_query=how+to+do+${encodeURIComponent(
-                                workout.name
-                              )}+exercise`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="btn btn-outline-danger btn-sm"
-                            >
-                              ▶ Watch Tutorial
-                            </a>
-                            <button
-                              onClick={() =>
-                                handleToggle(
-                                  "workout",
-                                  workout.id,
-                                  workout.isCompleted
-                                )
-                              }
-                              className={`btn btn-sm fw-bold ${
-                                workout.isCompleted
-                                  ? "btn-secondary"
-                                  : "btn-success"
-                              }`}
-                            >
-                              {workout.isCompleted ? "Undo" : "Mark as Done"}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* MEALS */}
-              <div className="col-12 mb-5">
-                <h3 className="fw-bold mb-3">🥗 Nutrition Plan</h3>
-                <div className="list-group shadow-sm rounded-4">
-                  {data.today_plan.Meals.map((meal) => (
-                    <div
-                      key={meal.id}
-                      className={`list-group-item d-flex align-items-center gap-3 p-3 ${
-                        meal.isCompleted ? "bg-light" : ""
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={meal.isCompleted}
-                        onChange={() =>
-                          handleToggle("meal", meal.id, meal.isCompleted)
-                        }
-                        className="form-check-input flex-shrink-0"
-                        style={{
-                          width: "1.5em",
-                          height: "1.5em",
-                          cursor: "pointer",
-                        }}
-                      />
-                      <div className="w-100 d-flex justify-content-between align-items-center">
-                        <div style={{ flexGrow: 1 }}>
-                          <h6
-                            className={`mb-0 ${
-                              meal.isCompleted
-                                ? "text-decoration-line-through text-muted"
-                                : "fw-bold"
-                            }`}
-                          >
-                            {meal.name}
-                          </h6>
-                          <small className="badge bg-secondary bg-opacity-10 text-secondary text-capitalize">
-                            {meal.type}
-                          </small>
-                        </div>
-                        <div className="d-flex align-items-center gap-3">
-                          <span className="fw-bold text-success">
-                            {meal.calories} kcal
-                          </span>
-                          <div className="btn-group">
-                            <button
-                              onClick={() => handleEditItem("meal", meal)}
-                              className="btn btn-outline-secondary btn-sm border-0"
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              onClick={() => handleDeleteItem("meal", meal.id)}
-                              className="btn btn-outline-danger btn-sm border-0"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {isAdmin && (
-        <div className="row g-4 mt-2">
-          <div className="col-md-6">
-            <div className="card text-white bg-primary bg-gradient mb-3 shadow border-0 h-100 rounded-4">
-              <div className="card-body text-center p-5">
-                <h6 className="opacity-75">Total Users</h6>
-                <h1 className="card-title display-3 fw-bold">
-                  {data.statistics?.total_users || 0}
-                </h1>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-6">
-            <div className="card text-white bg-success bg-gradient mb-3 shadow border-0 h-100 rounded-4">
-              <div className="card-body text-center p-5">
-                <h6 className="opacity-75">Active Plans</h6>
-                <h1 className="card-title display-3 fw-bold">
-                  {data.statistics?.active_plans || 0}
-                </h1>
-              </div>
-            </div>
-          </div>
-          <div className="col-12 text-end">
-            <Link to="/admin/users" className="btn btn-dark btn-lg shadow-sm">
-              👥 Manage All Users &rarr;
-            </Link>
-          </div>
-          <div className="col-12">
-            <div className="card shadow-sm border-0 rounded-4">
-              <div className="card-header bg-dark text-white fw-bold py-3 rounded-top-4">
-                Recent Registrations
-              </div>
-              <ul className="list-group list-group-flush">
-                {data.recent_registrations?.map((user) => (
-                  <li
-                    key={user.id}
-                    className="list-group-item d-flex justify-content-between align-items-center p-3"
-                  >
-                    <div>
-                      <span className="fw-bold d-block">{user.username}</span>
-                      <small className="text-muted">{user.email}</small>
-                    </div>
-                    <span className="badge bg-secondary rounded-pill">
-                      Joined: {new Date(user.createdAt).toLocaleDateString()}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL PROFILE */}
-      {showProfileModal && (
-        <>
-          <div className="modal-backdrop fade show"></div>
-          <div className="modal fade show d-block">
-            <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Edit My Profile</h5>
-                  <button
-                    className="btn-close"
-                    onClick={() => setShowProfileModal(false)}
-                  ></button>
-                </div>
-                <div className="modal-body">
-                  <form onSubmit={handleSaveProfile}>
-                    <div className="mb-3">
-                      <label>Username</label>
-                      <input
-                        name="username"
-                        className="form-control"
-                        value={profileForm.username}
-                        onChange={(e) =>
-                          setProfileForm({
-                            ...profileForm,
-                            username: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="row g-2 mb-3">
-                      <div className="col">
-                        <label>Weight</label>
-                        <input
-                          name="weight"
-                          type="number"
-                          className="form-control"
-                          value={profileForm.weight}
-                          onChange={(e) =>
-                            setProfileForm({
-                              ...profileForm,
-                              weight: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="col">
-                        <label>Height</label>
-                        <input
-                          name="height"
-                          type="number"
-                          className="form-control"
-                          value={profileForm.height}
-                          onChange={(e) =>
-                            setProfileForm({
-                              ...profileForm,
-                              height: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="col">
-                        <label>Age</label>
-                        <input
-                          name="age"
-                          type="number"
-                          className="form-control"
-                          value={profileForm.age}
-                          onChange={(e) =>
-                            setProfileForm({
-                              ...profileForm,
-                              age: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="d-flex justify-content-end gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => setShowProfileModal(false)}
-                      >
-                        Cancel
-                      </button>
-                      <button type="submit" className="btn btn-primary">
-                        Save Changes
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
+  static async deleteUser(req, res, next) {
+    try {
+      const { id } = req.params;
+      const user = await User.findByPk(id);
+      if (!user) throw { name: "NotFound" };
+      await user.destroy();
+      res.status(200).json({ message: `User ${user.email} has been deleted` });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
+
+module.exports = UserController;
