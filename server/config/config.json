@@ -1,10 +1,17 @@
 {
   "development": {
     "username": "postgres",
-    "password": "postgres",
-    "database": "body_architect_dev",
-    "host": "localhost",
-    "dialect": "postgres"
+    "password": "Babikau_123",
+    "database": "postgres",
+    "host": "db.wwityxzaatlomxglrieg.supabase.co",
+    "port": 5432,
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
   },
   "test": {
     "username": "postgres",
