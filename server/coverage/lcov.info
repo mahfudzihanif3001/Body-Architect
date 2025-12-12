@@ -48,11 +48,11 @@ LH:37
 BRDA:1,0,0,1
 BRDA:1,0,1,0
 BRDA:8,1,0,1
-BRDA:8,1,1,1
+BRDA:8,1,1,0
 BRDA:67,2,0,0
 BRDA:67,2,1,1
 BRF:6
-BRH:4
+BRH:3
 end_of_record
 TN:
 SF:controllers\PlanController.js
@@ -407,9 +407,9 @@ DA:12,1
 LF:7
 LH:7
 BRDA:2,0,0,1
-BRDA:2,0,1,1
+BRDA:2,0,1,0
 BRF:2
-BRH:2
+BRH:1
 end_of_record
 TN:
 SF:helpers\thirdParty.js
