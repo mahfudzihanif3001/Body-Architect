@@ -1,13 +1,37 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate, Link } from "react-router"; 
 import { api } from "../helpers/http-client";
 import Swal from "sweetalert2";
 import { GoogleLogin } from "@react-oauth/google";
+
+// REDUX IMPORT
+import { useDispatch } from "react-redux";
+import { loginUser } from "../features/authSlice";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const dispatch = useDispatch(); 
+  // --- REUSABLE SUCCESS HANDLER ---
+  const handleSuccess = (data) => {
+    localStorage.setItem("access_token", data.access_token);
+    localStorage.setItem("role", data.role);
+    localStorage.setItem("username", data.username);
+
+    // 2. Simpan ke Redux (Agar UI update otomatis)
+    dispatch(loginUser({ role: data.role, username: data.username }));
+
+    Swal.fire({
+      icon: "success",
+      title: "Welcome back!",
+      text: `Logged in as ${data.username}`,
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    navigate("/dashboard");
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -31,29 +55,12 @@ export default function Login() {
       handleSuccess(data);
     } catch (error) {
       console.log(error);
-
       Swal.fire({
         icon: "error",
         title: "Google Login Failed",
         text: "Could not authenticate with Google",
       });
     }
-  };
-
-  const handleSuccess = (data) => {
-    localStorage.setItem("access_token", data.access_token);
-    localStorage.setItem("role", data.role);
-    localStorage.setItem("username", data.username);
-
-    Swal.fire({
-      icon: "success",
-      title: "Welcome back!",
-      text: `Logged in as ${data.username}`,
-      timer: 1500,
-      showConfirmButton: false,
-    });
-
-    navigate("/dashboard");
   };
 
   return (
@@ -94,7 +101,6 @@ export default function Login() {
         <div className="text-center">
           <p className="form-label mb-2">OR</p>
           <div className="d-flex justify-content-center mb-4">
-            {/* Note: Customize Google Button CSS might be hard, wrapper needed */}
             <GoogleLogin
               onSuccess={handleGoogleLogin}
               theme="filled_black"

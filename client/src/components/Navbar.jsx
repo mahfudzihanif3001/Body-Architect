@@ -1,24 +1,22 @@
-import { Link, useNavigate, useLocation } from "react-router";
+import { Link, useNavigate } from "react-router"; 
 import Swal from "sweetalert2";
-import { useEffect, useState } from "react";
+
+// REDUX IMPORT
+import { useSelector, useDispatch } from "react-redux";
+import { logoutUser } from "../features/authSlice";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [role, setRole] = useState("");
+  const dispatch = useDispatch();
 
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    const userRole = localStorage.getItem("role");
-    setIsLoggedIn(!!token);
-    setRole(userRole || "");
-  }, [location]);
+  // AMBIL STATE DARI REDUX STORE
+  const { isLoggedIn, role } = useSelector((state) => state.auth);
 
   const handleLogout = () => {
     localStorage.clear();
-    setIsLoggedIn(false);
-    setRole("");
+
+    dispatch(logoutUser());
+
     Swal.fire({
       icon: "success",
       title: "Logged Out",
@@ -69,6 +67,7 @@ export default function Navbar() {
               </Link>
             </li>
 
+            {/* KONDISI BERDASARKAN REDUX */}
             {isLoggedIn && (
               <>
                 <li className="nav-item">
@@ -79,7 +78,8 @@ export default function Navbar() {
                     Dashboard
                   </Link>
                 </li>
-                {role !== "admin" && role !== "Admin" && (
+                {/* Cek Role Admin (Case Insensitive) */}
+                {role.toLowerCase() !== "admin" && (
                   <li className="nav-item">
                     <Link
                       className="nav-link text-white text-uppercase small fw-bold"
