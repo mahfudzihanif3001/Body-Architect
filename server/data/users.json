@@ -1,0 +1,54 @@
+[
+  {
+    "username": "Admin",
+    "email": "admin@gmail.com",
+    "password": "admin123",
+    "role": "admin",
+    "age": 25,
+    "gender": "male",
+    "height": 175.0,
+    "weight": 65.0,
+    "activityLevel": "moderate",
+    "goal": "maintenance",
+    "tdee": 2500
+  },
+  {
+    "username": "Budi Macho",
+    "email": "budi@mail.com",
+    "password": "12345678",
+    "role": "user",
+    "age": 25,
+    "gender": "male",
+    "height": 178.5,
+    "weight": 70.0,
+    "activityLevel": "high",
+    "goal": "muscle_build",
+    "tdee": 2800
+  },
+  {
+    "username": "Siti Diet",
+    "email": "siti@mail.com",
+    "password": "12345678",
+    "role": "user",
+    "age": 28,
+    "gender": "female",
+    "height": 160.0,
+    "weight": 65.0,
+    "activityLevel": "sedentary",
+    "goal": "weight_loss",
+    "tdee": 1600
+  },
+  {
+    "username": "Andi Runner",
+    "email": "andi@mail.com",
+    "password": "12345678",
+    "role": "user",
+    "age": 22,
+    "gender": "male",
+    "height": 172.0,
+    "weight": 68.0,
+    "activityLevel": "very_high",
+    "goal": "maintenance",
+    "tdee": 2400
+  }
+]
